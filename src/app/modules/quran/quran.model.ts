@@ -2,18 +2,9 @@ import { Schema, model } from "mongoose";
 import { ISurah } from "./quran.interface";
 
 const ayahSchema = new Schema({
-  number: {
-    type: Number,
-    required: true,
-  },
-  arabicText: {
-    type: String,
-    required: true,
-  },
-  translation: {
-    type: String,
-    required: true,
-  },
+  number: Number,
+  arabicText: String,
+  translation: String,
 });
 
 const surahSchema = new Schema<ISurah>({
@@ -33,4 +24,12 @@ const surahSchema = new Schema<ISurah>({
   ayahs: [ayahSchema],
 });
 
-export const Surah = model<ISurah>("Surah", surahSchema);
+surahSchema.index({
+  englishName: "text",
+  "ayahs.translation": "text",
+});
+
+export const Surah = model<ISurah>(
+  "Surah",
+  surahSchema
+);
