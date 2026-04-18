@@ -4,6 +4,7 @@ dotenv.config();
 import express, { Request, Response } from "express";
 import cors from "cors";
 import connectDB from "./app/config/db";
+import quranRoutes from "./app/modules/quran/quran.route";
  
 
 const app = express();
@@ -14,7 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-// app.use("/api", quranRoutes);
+app.use("/api", quranRoutes);
 
 // Test Route
 app.get("/", (req: Request, res: Response) => {
