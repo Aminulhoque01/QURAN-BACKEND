@@ -1,11 +1,51 @@
 import { calculatePagination } from "../../utils/pagination";
 import { Surah } from "./quran.model";
 
-const getAllSurahs = async () => {
-  return await Surah.find().select(
-    "surahNumber arabicName englishName"
+const getAllSurahs = async (query: any) => {
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
+  const search = query.search || "";
+
+  const skip = (page - 1) * limit;
+
+  const searchConditions: any[] = [];
+
+  // string search
+  searchConditions.push(
+    { englishName: { $regex: search, $options: "i" } },
+    { arabicName: { $regex: search, $options: "i" } },
+    { "ayahs.translation": { $regex: search, $options: "i" } }
   );
+
+  // number search (IMPORTANT FIX)
+  if (!isNaN(Number(search))) {
+    searchConditions.push({
+      surahNumber: Number(search),
+    });
+  }
+
+  const filter =
+    search ? { $or: searchConditions } : {};
+
+  const data = await Surah.find(filter)
+    .select("surahNumber arabicName englishName")
+    .skip(skip)
+    .limit(limit)
+    .sort({ surahNumber: 1 });
+
+  const total = await Surah.countDocuments(filter);
+
+  return {
+    data,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 };
+
 const getSingleSurah = async (id: string) => {
   const surahId = Number(id);
 
@@ -18,46 +58,10 @@ const getSingleSurah = async (id: string) => {
   });
 };
 
-const searchAyahWithPagination = async (
-  searchTerm: string,
-  page = 1,
-  limit = 10
-) => {
-  const { skip } = calculatePagination(page, limit);
-
-  const filter = searchTerm
-    ? {
-        $text: {
-          $search: searchTerm,
-        },
-      }
-    : {};
-
-  const [result, total] = await Promise.all([
-    Surah.find(filter)
-      .select(
-        "surahNumber arabicName englishName ayahs"
-      )
-      .skip(skip)
-      .limit(limit)
-      .lean(),
-
-    Surah.countDocuments(filter),
-  ]);
-
-  return {
-    meta: {
-      page,
-      limit,
-      total,
-      totalPage: Math.ceil(total / limit),
-    },
-    data: result,
-  };
-};
+ 
 
 export const QuranService = {
   getAllSurahs,
   getSingleSurah,
-  searchAyahWithPagination
+   
 };
